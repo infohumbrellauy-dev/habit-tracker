@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://infohumbrellauy-dev.github.io/habit-tracker/sitemap.xml
