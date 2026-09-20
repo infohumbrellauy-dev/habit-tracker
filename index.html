@@ -476,6 +476,63 @@
   .workout-date-heading { color: var(--text-dim); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; margin: 14px 0 4px; }
   .workout-date-heading:first-child { margin-top: 0; }
 
+  .supp-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .supp-form input, .supp-form select {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .supp-form input:focus, .supp-form select:focus { border-color: var(--accent); }
+  #suppNameInput { flex: 1; min-width: 160px; }
+  #suppNoteInput { flex: 1; min-width: 140px; }
+  .supp-form button {
+    background: var(--accent);
+    color: #0b1210;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .supp-disclaimer {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-top: 12px;
+    font-style: italic;
+  }
+  .supp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+    gap: 10px;
+  }
+  .supp-row:last-child { border-bottom: none; }
+  .supp-row .sp-name { font-weight: 600; flex: 1; }
+  .supp-row .sp-meta { color: var(--text-dim); white-space: nowrap; }
+  .supp-row .sp-del {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .supp-row .sp-del:hover { color: var(--danger); }
+  .supp-empty { color: var(--text-dim); font-size: 0.85rem; padding: 10px 0; }
+  .supp-date-heading { color: var(--text-dim); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; margin: 14px 0 4px; }
+  .supp-date-heading:first-child { margin-top: 0; }
+
   footer {
     text-align: center;
     color: var(--text-dim);
@@ -645,7 +702,9 @@
         <button class="preset-btn" data-secs="60">60s</button>
         <button class="preset-btn" data-secs="90">90s</button>
         <button class="preset-btn" data-secs="120">120s</button>
-        <input id="timerCustom" type="number" min="5" max="900" placeholder="Custom (seg)" />
+        <button class="preset-btn" data-secs="180">3 min</button>
+        <button class="preset-btn" data-secs="300">5 min</button>
+        <input id="timerCustom" type="number" min="5" max="3600" placeholder="Custom (seg)" />
       </div>
       <div class="timer-display" id="timerDisplay">00:00</div>
       <div class="timer-controls">
@@ -665,6 +724,23 @@
         <button id="workoutAddBtn">Agregar</button>
       </div>
       <div id="workoutLog"></div>
+    </section>
+
+    <section class="health-section">
+      <h2 class="section-title">💊 Suplementos y tratamientos</h2>
+      <div class="supp-form">
+        <input id="suppNameInput" type="text" placeholder="Nombre (ej: Creatina, Vitamina D)" maxlength="50" />
+        <input id="suppDoseInput" type="text" placeholder="Dosis (ej: 5g, 1 comprimido)" maxlength="30" />
+        <select id="suppTimeSelect">
+          <option value="Mañana">Mañana</option>
+          <option value="Tarde">Tarde</option>
+          <option value="Noche">Noche</option>
+        </select>
+        <input id="suppNoteInput" type="text" placeholder="Nota (opcional)" maxlength="80" />
+        <button id="suppAddBtn">Registrar</button>
+      </div>
+      <div id="suppLog"></div>
+      <div class="supp-disclaimer">Esto es solo tu bitácora personal. No verifica interacciones ni da recomendaciones médicas — consultá a un profesional de salud para eso.</div>
     </section>
 
     <section class="health-section">
@@ -692,6 +768,7 @@
   const WEBAUTHN_ID_KEY = "habit-tracker-webauthn-id-v1";
   const HEALTH_KEY = "habit-tracker-health-v1";
   const WORKOUT_KEY = "habit-tracker-workout-v1";
+  const SUPP_KEY = "habit-tracker-supplements-v1";
   const DAYS_HISTORY = 91; // ~13 weeks heatmap
 
   const CATEGORIES = [
@@ -777,9 +854,25 @@
     } catch (e) {}
   }
 
+  function loadSupplements() {
+    try {
+      const raw = localStorage.getItem(SUPP_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveSupplements(logs) {
+    try {
+      localStorage.setItem(SUPP_KEY, JSON.stringify(logs));
+    } catch (e) {}
+  }
+
   let habits = loadHabits();
   let healthLogs = loadHealthLogs();
   let workoutLogs = loadWorkouts();
+  let suppLogs = loadSupplements();
 
   function addHabit(name, category) {
     name = name.trim();
@@ -1032,6 +1125,62 @@
   function pauseTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
+  }
+
+  function addSuppEntry(name, dose, time, note) {
+    name = (name || "").trim();
+    if (!name) return;
+    suppLogs.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      date: todayStr(),
+      name,
+      dose: (dose || "").trim(),
+      time: time || "Mañana",
+      note: (note || "").trim()
+    });
+    saveSupplements(suppLogs);
+    renderSupplements();
+  }
+
+  function deleteSuppEntry(id) {
+    suppLogs = suppLogs.filter(s => s.id !== id);
+    saveSupplements(suppLogs);
+    renderSupplements();
+  }
+
+  function renderSupplements() {
+    const wrap = document.getElementById("suppLog");
+    if (suppLogs.length === 0) {
+      wrap.innerHTML = `<div class="supp-empty">Todavía no registraste nada.</div>`;
+      return;
+    }
+    const sortedDesc = [...suppLogs].sort((a, b) => b.date.localeCompare(a.date));
+    let lastDate = null;
+    let html = "";
+    sortedDesc.forEach(s => {
+      if (s.date !== lastDate) {
+        html += `<div class="supp-date-heading">${s.date}</div>`;
+        lastDate = s.date;
+      }
+      const metaParts = [s.time];
+      if (s.dose) metaParts.push(s.dose);
+      if (s.note) metaParts.push(s.note);
+      html += `
+        <div class="supp-row">
+          <span class="sp-name">${escapeHtml(s.name)}</span>
+          <span class="sp-meta">${escapeHtml(metaParts.join(" · "))}</span>
+          <button class="sp-del" data-supp-del="${s.id}" title="Eliminar">✕</button>
+        </div>
+      `;
+    });
+    wrap.innerHTML = html;
+    wrap.querySelectorAll("[data-supp-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (confirm("¿Eliminar este registro?")) {
+          deleteSuppEntry(btn.dataset.suppDel);
+        }
+      });
+    });
   }
 
   function isLocked() {
@@ -1388,6 +1537,18 @@
     ex.focus();
   });
 
+  document.getElementById("suppAddBtn").addEventListener("click", () => {
+    const n = document.getElementById("suppNameInput");
+    const d = document.getElementById("suppDoseInput");
+    const t = document.getElementById("suppTimeSelect");
+    const note = document.getElementById("suppNoteInput");
+    addSuppEntry(n.value, d.value, t.value, note.value);
+    n.value = "";
+    d.value = "";
+    note.value = "";
+    n.focus();
+  });
+
   document.getElementById("weightAddBtn").addEventListener("click", () => {
     const w = document.getElementById("weightInput");
     const n = document.getElementById("weightNote");
@@ -1419,6 +1580,7 @@
   initTheme();
   renderHealth();
   renderWorkouts();
+  renderSupplements();
   setTimerSeconds(60);
   if (isLocked()) {
     showLockScreen(render);
