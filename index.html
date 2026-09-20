@@ -264,6 +264,18 @@
     cursor: pointer;
   }
   .lock-error { color: var(--danger); font-size: 0.82rem; margin-top: 10px; }
+  #biometricUnlockBtn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  #biometricUnlockBtn:hover { border-color: var(--accent); }
   .sponsor-link {
     display: inline-block;
     margin-top: 10px;
@@ -281,6 +293,7 @@
       <div class="lock-title">Ingresá tu PIN</div>
       <input id="lockInput" type="password" inputmode="numeric" maxlength="12" placeholder="PIN" />
       <button id="unlockBtn">Desbloquear</button>
+      <button id="biometricUnlockBtn" style="display:none;">👆 Usar Face ID / Huella</button>
       <div id="lockError" class="lock-error" style="display:none;">PIN incorrecto</div>
     </div>
   </div>
@@ -304,6 +317,7 @@
       <button id="exportBtn" class="text-btn">Exportar datos</button>
       <button id="importBtn" class="text-btn">Importar datos</button>
       <button id="pinBtn" class="text-btn">🔒 PIN</button>
+      <button id="biometricBtn" class="text-btn">👆 Face ID/Huella</button>
       <input id="importFile" type="file" accept="application/json" style="display:none;" />
     </div>
 
@@ -324,6 +338,7 @@
   const STORAGE_KEY = "habit-tracker-data-v1";
   const THEME_KEY = "habit-tracker-theme-v1";
   const PIN_KEY = "habit-tracker-pin-v1";
+  const WEBAUTHN_ID_KEY = "habit-tracker-webauthn-id-v1";
   const DAYS_HISTORY = 91; // ~13 weeks heatmap
 
   const CATEGORIES = [
@@ -443,20 +458,106 @@
     try { return !!localStorage.getItem(PIN_KEY); } catch (e) { return false; }
   }
 
+  function hasBiometric() {
+    try { return !!localStorage.getItem(WEBAUTHN_ID_KEY); } catch (e) { return false; }
+  }
+
+  function isWebAuthnAvailable() {
+    return typeof window.PublicKeyCredential !== "undefined" && !!navigator.credentials;
+  }
+
+  function bufToB64(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  }
+
+  function b64ToBuf(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  async function registerBiometric() {
+    if (!isWebAuthnAvailable()) {
+      alert("Tu navegador no soporta Face ID / huella (WebAuthn) en este contexto.");
+      return;
+    }
+    try {
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const userId = crypto.getRandomValues(new Uint8Array(16));
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: { name: "Rastreador de Hábitos" },
+          user: { id: userId, name: "usuario-local", displayName: "Usuario local" },
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+          timeout: 60000
+        }
+      });
+      localStorage.setItem(WEBAUTHN_ID_KEY, bufToB64(cred.rawId));
+      alert("Face ID / huella configurado en este dispositivo.");
+    } catch (e) {
+      alert("No se pudo configurar Face ID/huella acá: " + e.message + "\n\nEsto suele pasar al abrir el archivo directamente (file://). Funciona de forma confiable si la app está publicada en un servidor con HTTPS (por ejemplo GitHub Pages).");
+    }
+  }
+
+  async function removeBiometric() {
+    localStorage.removeItem(WEBAUTHN_ID_KEY);
+    alert("Face ID / huella desactivado.");
+  }
+
+  function manageBiometric() {
+    if (hasBiometric()) {
+      if (confirm("Ya tenés Face ID/huella configurado en este dispositivo. ¿Querés quitarlo?")) {
+        removeBiometric();
+      }
+    } else {
+      registerBiometric();
+    }
+  }
+
+  async function authenticateBiometric(onSuccess) {
+    if (!isWebAuthnAvailable()) {
+      alert("Tu navegador no soporta Face ID / huella acá.");
+      return;
+    }
+    try {
+      const idBuf = b64ToBuf(localStorage.getItem(WEBAUTHN_ID_KEY));
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          allowCredentials: [{ id: idBuf, type: "public-key" }],
+          userVerification: "required",
+          timeout: 60000
+        }
+      });
+      onSuccess();
+    } catch (e) {
+      alert("No se pudo verificar con Face ID/huella (" + e.message + "). Usá tu PIN.");
+    }
+  }
+
   function showLockScreen(onUnlock) {
     const screen = document.getElementById("lockScreen");
     const input = document.getElementById("lockInput");
     const error = document.getElementById("lockError");
+    const bioBtn = document.getElementById("biometricUnlockBtn");
     screen.style.display = "flex";
     input.value = "";
     error.style.display = "none";
     input.focus();
 
+    function finishUnlock() {
+      screen.style.display = "none";
+      onUnlock();
+    }
+
     function tryUnlock() {
       const stored = localStorage.getItem(PIN_KEY);
       if (simpleHash(input.value) === stored) {
-        screen.style.display = "none";
-        onUnlock();
+        finishUnlock();
       } else {
         error.style.display = "block";
         input.value = "";
@@ -466,6 +567,13 @@
 
     document.getElementById("unlockBtn").onclick = tryUnlock;
     input.onkeydown = (e) => { if (e.key === "Enter") tryUnlock(); };
+
+    if (hasBiometric() && isWebAuthnAvailable()) {
+      bioBtn.style.display = "block";
+      bioBtn.onclick = () => authenticateBiometric(finishUnlock);
+    } else {
+      bioBtn.style.display = "none";
+    }
   }
 
   function managePin() {
@@ -638,6 +746,7 @@
   });
 
   document.getElementById("pinBtn").addEventListener("click", managePin);
+  document.getElementById("biometricBtn").addEventListener("click", manageBiometric);
 
   initTheme();
   if (isLocked()) {
