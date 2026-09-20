@@ -17,6 +17,18 @@
     --danger: #f87171;
     --shadow: rgba(0,0,0,0.4);
   }
+  :root[data-theme="light"] {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel-2: #eceff3;
+    --border: #dde1e7;
+    --text: #16181d;
+    --text-dim: #6b7280;
+    --accent: #10a37f;
+    --accent-dim: #d3f2e8;
+    --danger: #dc2626;
+    --shadow: rgba(0,0,0,0.08);
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -25,11 +37,29 @@
     color: var(--text);
     min-height: 100vh;
     padding: 32px 16px 80px;
+    transition: background 0.2s ease, color 0.2s ease;
   }
   .wrap { max-width: 760px; margin: 0 auto; }
-  header { margin-bottom: 28px; }
+  header {
+    margin-bottom: 28px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
   h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; }
   .sub { color: var(--text-dim); font-size: 0.9rem; }
+  .theme-toggle {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
 
   .add-row {
     display: flex;
@@ -186,8 +216,11 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>🔥 Rastreador de Hábitos</h1>
-      <div class="sub">Marca tus hábitos cada día y mira crecer tu racha.</div>
+      <div>
+        <h1>🔥 Rastreador de Hábitos</h1>
+        <div class="sub">Marca tus hábitos cada día y mira crecer tu racha.</div>
+      </div>
+      <button id="themeToggle" class="theme-toggle" title="Cambiar tema">🌙</button>
     </header>
 
     <div class="add-row">
@@ -216,7 +249,21 @@
 <script>
 (function () {
   const STORAGE_KEY = "habit-tracker-data-v1";
+  const THEME_KEY = "habit-tracker-theme-v1";
   const DAYS_HISTORY = 91; // ~13 weeks heatmap
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.getElementById("themeToggle").textContent = theme === "light" ? "☀️" : "🌙";
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+
+  function initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    const theme = saved || "dark";
+    applyTheme(theme);
+  }
 
   function todayStr() {
     return new Date().toISOString().slice(0, 10);
@@ -428,6 +475,12 @@
     e.target.value = "";
   });
 
+  document.getElementById("themeToggle").addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    applyTheme(current === "light" ? "dark" : "light");
+  });
+
+  initTheme();
   render();
 })();
 </script>
