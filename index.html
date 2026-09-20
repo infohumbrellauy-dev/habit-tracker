@@ -40,6 +40,31 @@
     transition: background 0.2s ease, color 0.2s ease;
   }
   .wrap { max-width: 760px; margin: 0 auto; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes flicker {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.12) rotate(-4deg); }
+  }
+  .wrap > * {
+    animation: fadeInUp 0.5s ease both;
+  }
+  .wrap > header { animation-delay: 0s; }
+  .wrap > .add-row { animation-delay: 0.08s; }
+  .wrap > .data-row { animation-delay: 0.14s; }
+  .wrap > #habitList { animation-delay: 0.2s; }
+  .wrap > #emptyState { animation-delay: 0.2s; }
+  .wrap > footer { animation-delay: 0.28s; }
+  .flame {
+    display: inline-block;
+    animation: flicker 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wrap > *, .flame { animation: none; }
+  }
   header {
     margin-bottom: 28px;
     display: flex;
@@ -301,7 +326,7 @@
   <div class="wrap">
     <header>
       <div>
-        <h1>🔥 Rastreador de Hábitos</h1>
+        <h1><span class="flame">🔥</span> Rastreador de Hábitos</h1>
         <div class="sub">Marca tus hábitos cada día y mira crecer tu racha.</div>
       </div>
       <button id="themeToggle" class="theme-toggle" title="Cambiar tema">🌙</button>
