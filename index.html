@@ -59,6 +59,22 @@
   }
   .add-row button:hover { filter: brightness(1.08); }
 
+  .data-row {
+    display: flex;
+    gap: 16px;
+    margin: -12px 0 24px;
+  }
+  .text-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+  .text-btn:hover { color: var(--accent); }
+
   .habit-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -179,6 +195,12 @@
       <button id="addBtn">Añadir</button>
     </div>
 
+    <div class="data-row">
+      <button id="exportBtn" class="text-btn">Exportar datos</button>
+      <button id="importBtn" class="text-btn">Importar datos</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none;" />
+    </div>
+
     <div id="habitList"></div>
     <div id="emptyState" class="empty" style="display:none;">
       <span>🌱</span>
@@ -234,6 +256,44 @@
     habits = habits.filter(h => h.id !== id);
     saveHabits(habits);
     render();
+  }
+
+  function editHabitName(id) {
+    const h = habits.find(x => x.id === id);
+    if (!h) return;
+    const newName = prompt("Nuevo nombre del hábito:", h.name);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    h.name = trimmed;
+    saveHabits(habits);
+    render();
+  }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(habits, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "habit-tracker-backup-" + todayStr() + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!Array.isArray(parsed)) throw new Error("Formato inválido");
+        habits = parsed;
+        saveHabits(habits);
+        render();
+      } catch (e) {
+        alert("No se pudo importar el archivo: formato inválido.");
+      }
+    };
+    reader.readAsText(file);
   }
 
   function toggleToday(id) {
@@ -319,6 +379,7 @@
               <button class="check-btn ${doneToday ? "done" : ""}" data-id="${h.id}" title="Marcar hoy">
                 ${doneToday ? "✓" : ""}
               </button>
+              <button class="del-btn" data-edit="${h.id}" title="Editar nombre">✎</button>
               <button class="del-btn" data-del="${h.id}" title="Eliminar">✕</button>
             </div>
           </div>
@@ -337,6 +398,9 @@
         }
       });
     });
+    list.querySelectorAll("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => editHabitName(btn.dataset.edit));
+    });
   }
 
   document.getElementById("addBtn").addEventListener("click", () => {
@@ -350,6 +414,18 @@
     if (e.key === "Enter") {
       document.getElementById("addBtn").click();
     }
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", exportData);
+
+  document.getElementById("importBtn").addEventListener("click", () => {
+    document.getElementById("importFile").click();
+  });
+
+  document.getElementById("importFile").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) importData(file);
+    e.target.value = "";
   });
 
   render();
