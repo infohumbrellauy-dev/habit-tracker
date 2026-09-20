@@ -441,7 +441,16 @@
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.08); }
   }
-  .timer-controls { display: flex; gap: 8px; justify-content: center; }
+  .bpm-display {
+    font-size: 2.4rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--danger);
+    margin: 6px 0 14px;
+  }
+  .bpm-display span { font-size: 1rem; color: var(--text-dim); font-weight: 600; }
+  .bpm-status { color: var(--text-dim); font-size: 0.78rem; text-align: center; margin-top: 10px; }
+  .timer-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .timer-controls button {
     background: var(--accent);
     color: #0b1210;
@@ -732,6 +741,16 @@
     </div>
 
     <div id="tab-training" class="tab-panel">
+    <section class="health-section">
+      <h2 class="section-title">❤️ Ritmo cardíaco (Bluetooth)</h2>
+      <div class="bpm-display" id="bpmDisplay">-- <span>bpm</span></div>
+      <div class="timer-controls">
+        <button id="bleConnectBtn">Conectar banda/reloj BLE</button>
+        <button id="bleDisconnectBtn" style="display:none;">Desconectar</button>
+      </div>
+      <div class="bpm-status" id="bpmStatus">Requiere un dispositivo Bluetooth con perfil estándar de ritmo cardíaco (bandas de pecho, algunos relojes). Apple Watch no es compatible con esto.</div>
+    </section>
+
     <section class="health-section">
       <h2 class="section-title">⏱️ Temporizador de descanso</h2>
       <div class="timer-presets">
@@ -1126,6 +1145,61 @@
         }
       });
     });
+  }
+
+  let bleDevice = null;
+
+  function isWebBluetoothAvailable() {
+    return !!navigator.bluetooth;
+  }
+
+  function parseHeartRate(dataview) {
+    const flags = dataview.getUint8(0);
+    const is16bit = flags & 0x1;
+    return is16bit ? dataview.getUint16(1, true) : dataview.getUint8(1);
+  }
+
+  function handleHeartRateChanged(event) {
+    const bpm = parseHeartRate(event.target.value);
+    document.getElementById("bpmDisplay").innerHTML = bpm + ' <span>bpm</span>';
+  }
+
+  async function connectBLE() {
+    if (!isWebBluetoothAvailable()) {
+      document.getElementById("bpmStatus").textContent = "Tu navegador no soporta Web Bluetooth acá. Probá con Chrome o Edge de escritorio o Android. Si abriste el archivo directamente (file://), puede no funcionar — funciona de forma confiable si la app está publicada con HTTPS (ej. GitHub Pages).";
+      return;
+    }
+    try {
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ services: ["heart_rate"] }]
+      });
+      const server = await bleDevice.gatt.connect();
+      const service = await server.getPrimaryService("heart_rate");
+      const characteristic = await service.getCharacteristic("heart_rate_measurement");
+      await characteristic.startNotifications();
+      characteristic.addEventListener("characteristicvaluechanged", handleHeartRateChanged);
+      document.getElementById("bpmStatus").textContent = "Conectado a " + (bleDevice.name || "dispositivo") + ".";
+      document.getElementById("bleConnectBtn").style.display = "none";
+      document.getElementById("bleDisconnectBtn").style.display = "inline-block";
+      bleDevice.addEventListener("gattserverdisconnected", onBleDisconnected);
+    } catch (e) {
+      document.getElementById("bpmStatus").textContent = "No se pudo conectar: " + e.message;
+    }
+  }
+
+  function onBleDisconnected() {
+    document.getElementById("bpmDisplay").innerHTML = '-- <span>bpm</span>';
+    document.getElementById("bpmStatus").textContent = "Desconectado.";
+    document.getElementById("bleConnectBtn").style.display = "inline-block";
+    document.getElementById("bleDisconnectBtn").style.display = "none";
+  }
+
+  function disconnectBLE() {
+    if (bleDevice && bleDevice.gatt.connected) {
+      bleDevice.gatt.disconnect();
+    } else {
+      onBleDisconnected();
+    }
   }
 
   let timerInterval = null;
@@ -1545,6 +1619,9 @@
       document.getElementById("addBtn").click();
     }
   });
+
+  document.getElementById("bleConnectBtn").addEventListener("click", connectBLE);
+  document.getElementById("bleDisconnectBtn").addEventListener("click", disconnectBLE);
 
   document.querySelectorAll(".preset-btn").forEach(btn => {
     btn.addEventListener("click", () => {
