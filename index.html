@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ardor — Rastreador de Hábitos</title>
+<title>Brasa — Rastreador de Hábitos</title>
 <style>
   :root {
     --bg: #0f1115;
@@ -792,7 +792,7 @@
   <div class="wrap">
     <header>
       <div>
-        <h1><span class="flame">🔥</span> Ardor</h1>
+        <h1><span class="flame">🔥</span> Brasa</h1>
         <div class="sub">Marca tus hábitos cada día y mira crecer tu racha.</div>
       </div>
       <button id="themeToggle" class="theme-toggle" title="Cambiar tema">🌙</button>
@@ -1806,6 +1806,23 @@
     });
   }
 
+  window.addEventListener("error", (e) => {
+    console.error("Error inesperado:", e.error || e.message);
+    try { showToast("⚠️ Ocurrió un error, pero tus datos están a salvo."); } catch (_) {}
+  });
+
+  window.addEventListener("unhandledrejection", (e) => {
+    console.error("Promesa rechazada:", e.reason);
+  });
+
+  function safeRun(fn, label) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("Fallo al inicializar " + label + ":", e);
+    }
+  }
+
   const categorySelect = document.getElementById("categorySelect");
   categorySelect.innerHTML = CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join("");
 
@@ -1920,16 +1937,18 @@
   document.getElementById("pinBtn").addEventListener("click", managePin);
   document.getElementById("biometricBtn").addEventListener("click", manageBiometric);
 
-  initTheme();
-  renderHealth();
-  renderWorkouts();
-  renderSupplements();
-  setTimerSeconds(60);
-  if (isLocked()) {
-    showLockScreen(render);
-  } else {
-    render();
-  }
+  safeRun(initTheme, "tema");
+  safeRun(renderHealth, "peso y salud");
+  safeRun(renderWorkouts, "entrenamiento");
+  safeRun(renderSupplements, "suplementos");
+  safeRun(() => setTimerSeconds(60), "temporizador");
+  safeRun(() => {
+    if (isLocked()) {
+      showLockScreen(render);
+    } else {
+      render();
+    }
+  }, "hábitos");
 })();
 </script>
 </body>
