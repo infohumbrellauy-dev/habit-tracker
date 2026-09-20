@@ -40,6 +40,31 @@
     transition: background 0.2s ease, color 0.2s ease;
   }
   .wrap { max-width: 760px; margin: 0 auto; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes flicker {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.12) rotate(-4deg); }
+  }
+  .wrap > * {
+    animation: fadeInUp 0.5s ease both;
+  }
+  .wrap > header { animation-delay: 0s; }
+  .wrap > .add-row { animation-delay: 0.08s; }
+  .wrap > .data-row { animation-delay: 0.14s; }
+  .wrap > #habitList { animation-delay: 0.2s; }
+  .wrap > #emptyState { animation-delay: 0.2s; }
+  .wrap > footer { animation-delay: 0.28s; }
+  .flame {
+    display: inline-block;
+    animation: flicker 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wrap > *, .flame { animation: none; }
+  }
   header {
     margin-bottom: 28px;
     display: flex;
@@ -212,7 +237,22 @@
     padding: 60px 20px;
     font-size: 0.95rem;
   }
-  .empty span { font-size: 2rem; display: block; margin-bottom: 10px; }
+  .mascot { display: block; margin: 0 auto 6px; color: var(--text-dim); }
+  .mascot-body { animation: mascotBounce 2.6s ease-in-out infinite; transform-origin: 60px 106px; }
+  .mascot-arm { animation: mascotWave 1.6s ease-in-out infinite; transform-origin: 36px 66px; }
+  @keyframes mascotBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes mascotWave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-18deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-10deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mascot-body, .mascot-arm { animation: none; }
+  }
 
   footer {
     text-align: center;
@@ -301,7 +341,7 @@
   <div class="wrap">
     <header>
       <div>
-        <h1>🔥 Rastreador de Hábitos</h1>
+        <h1><span class="flame">🔥</span> Rastreador de Hábitos</h1>
         <div class="sub">Marca tus hábitos cada día y mira crecer tu racha.</div>
       </div>
       <button id="themeToggle" class="theme-toggle" title="Cambiar tema">🌙</button>
@@ -323,8 +363,17 @@
 
     <div id="habitList"></div>
     <div id="emptyState" class="empty" style="display:none;">
-      <span>🌱</span>
-      Aún no tienes hábitos. Añade el primero arriba.
+      <svg class="mascot" viewBox="0 0 120 120" width="100" height="100" aria-hidden="true">
+        <ellipse class="mascot-shadow" cx="60" cy="106" rx="26" ry="6" fill="currentColor" opacity="0.12"/>
+        <g class="mascot-body">
+          <path d="M60 16c16 14 24 28 24 42a24 24 0 1 1-48 0c0-14 8-28 24-42z" fill="#ef4444"/>
+          <circle cx="51" cy="60" r="4.5" fill="#0b1210"/>
+          <circle cx="71" cy="60" r="4.5" fill="#0b1210"/>
+          <path d="M52 72c4 5 12 5 16 0" stroke="#0b1210" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="mascot-arm" d="M36 66c-8 2-13 8-13 14" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <div>Aún no tienes hábitos. Añade el primero arriba.</div>
     </div>
 
     <footer>
