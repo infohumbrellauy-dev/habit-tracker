@@ -77,6 +77,14 @@
     outline: none;
   }
   .add-row input:focus { border-color: var(--accent); }
+  .add-row select {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0 10px;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
   .add-row button, .icon-btn {
     background: var(--accent);
     color: #0b1210;
@@ -123,6 +131,15 @@
   .habit-name {
     font-weight: 600;
     font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .category-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
   }
   .habit-meta {
     color: var(--text-dim);
@@ -203,6 +220,50 @@
     font-size: 0.78rem;
     margin-top: 30px;
   }
+
+  .lock-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lock-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    text-align: center;
+    width: 260px;
+  }
+  .lock-icon { font-size: 2rem; margin-bottom: 8px; }
+  .lock-title { font-weight: 600; margin-bottom: 16px; }
+  #lockInput {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 12px;
+    outline: none;
+  }
+  #lockInput:focus { border-color: var(--accent); }
+  #unlockBtn {
+    width: 100%;
+    background: var(--accent);
+    color: #0b1210;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .lock-error { color: var(--danger); font-size: 0.82rem; margin-top: 10px; }
   .sponsor-link {
     display: inline-block;
     margin-top: 10px;
@@ -214,6 +275,16 @@
 </style>
 </head>
 <body>
+  <div id="lockScreen" class="lock-screen" style="display:none;">
+    <div class="lock-card">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">Ingresá tu PIN</div>
+      <input id="lockInput" type="password" inputmode="numeric" maxlength="12" placeholder="PIN" />
+      <button id="unlockBtn">Desbloquear</button>
+      <div id="lockError" class="lock-error" style="display:none;">PIN incorrecto</div>
+    </div>
+  </div>
+
   <div class="wrap">
     <header>
       <div>
@@ -225,12 +296,14 @@
 
     <div class="add-row">
       <input id="habitInput" type="text" placeholder="Nuevo hábito, ej: Leer 10 páginas" maxlength="60" />
+      <select id="categorySelect" title="Categoría"></select>
       <button id="addBtn">Añadir</button>
     </div>
 
     <div class="data-row">
       <button id="exportBtn" class="text-btn">Exportar datos</button>
       <button id="importBtn" class="text-btn">Importar datos</button>
+      <button id="pinBtn" class="text-btn">🔒 PIN</button>
       <input id="importFile" type="file" accept="application/json" style="display:none;" />
     </div>
 
@@ -250,7 +323,29 @@
 (function () {
   const STORAGE_KEY = "habit-tracker-data-v1";
   const THEME_KEY = "habit-tracker-theme-v1";
+  const PIN_KEY = "habit-tracker-pin-v1";
   const DAYS_HISTORY = 91; // ~13 weeks heatmap
+
+  const CATEGORIES = [
+    { id: "general", label: "General", color: "#8b8f9a" },
+    { id: "fitness", label: "💪 Fitness", color: "#f59e0b" },
+    { id: "salud", label: "🩺 Salud", color: "#60a5fa" },
+    { id: "estudio", label: "📚 Estudio", color: "#a78bfa" },
+    { id: "otro", label: "✨ Otro", color: "#f472b6" }
+  ];
+
+  function getCategory(id) {
+    return CATEGORIES.find(c => c.id === id) || CATEGORIES[0];
+  }
+
+  // Ofuscación simple, NO es cifrado real: solo evita mostrar el PIN en texto plano.
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    return hash.toString(36);
+  }
 
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
@@ -286,12 +381,13 @@
 
   let habits = loadHabits();
 
-  function addHabit(name) {
+  function addHabit(name, category) {
     name = name.trim();
     if (!name) return;
     habits.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       name: name,
+      category: category || "general",
       createdAt: todayStr(),
       dates: []
     });
@@ -341,6 +437,60 @@
       }
     };
     reader.readAsText(file);
+  }
+
+  function isLocked() {
+    try { return !!localStorage.getItem(PIN_KEY); } catch (e) { return false; }
+  }
+
+  function showLockScreen(onUnlock) {
+    const screen = document.getElementById("lockScreen");
+    const input = document.getElementById("lockInput");
+    const error = document.getElementById("lockError");
+    screen.style.display = "flex";
+    input.value = "";
+    error.style.display = "none";
+    input.focus();
+
+    function tryUnlock() {
+      const stored = localStorage.getItem(PIN_KEY);
+      if (simpleHash(input.value) === stored) {
+        screen.style.display = "none";
+        onUnlock();
+      } else {
+        error.style.display = "block";
+        input.value = "";
+        input.focus();
+      }
+    }
+
+    document.getElementById("unlockBtn").onclick = tryUnlock;
+    input.onkeydown = (e) => { if (e.key === "Enter") tryUnlock(); };
+  }
+
+  function managePin() {
+    const current = localStorage.getItem(PIN_KEY);
+    if (!current) {
+      const p1 = prompt("Crear un PIN para proteger el acceso local a esta app (esto NO es cifrado, solo evita que alguien con acceso a tu dispositivo abra la app sin querer):");
+      if (!p1) return;
+      localStorage.setItem(PIN_KEY, simpleHash(p1));
+      alert("PIN configurado.");
+    } else {
+      const p = prompt("Ingresá tu PIN actual:");
+      if (p === null) return;
+      if (simpleHash(p) !== current) { alert("PIN incorrecto."); return; }
+      const remove = confirm("PIN correcto. Aceptar = quitar la protección. Cancelar = cambiarlo por uno nuevo.");
+      if (remove) {
+        localStorage.removeItem(PIN_KEY);
+        alert("Protección quitada.");
+      } else {
+        const newPin = prompt("Nuevo PIN:");
+        if (newPin) {
+          localStorage.setItem(PIN_KEY, simpleHash(newPin));
+          alert("PIN actualizado.");
+        }
+      }
+    }
   }
 
   function toggleToday(id) {
@@ -414,11 +564,15 @@
         return `<div class="${cls}" title="${c.date}"></div>`;
       }).join("");
 
+      const cat = getCategory(h.category);
       return `
         <div class="habit-card">
           <div class="habit-top">
             <div>
-              <div class="habit-name">${escapeHtml(h.name)}</div>
+              <div class="habit-name">
+                ${escapeHtml(h.name)}
+                <span class="category-badge" style="background:${cat.color}33; color:${cat.color};">${cat.label}</span>
+              </div>
               <div class="habit-meta">${h.dates.length} días completados en total</div>
             </div>
             <div class="habit-actions">
@@ -450,9 +604,12 @@
     });
   }
 
+  const categorySelect = document.getElementById("categorySelect");
+  categorySelect.innerHTML = CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join("");
+
   document.getElementById("addBtn").addEventListener("click", () => {
     const input = document.getElementById("habitInput");
-    addHabit(input.value);
+    addHabit(input.value, categorySelect.value);
     input.value = "";
     input.focus();
   });
@@ -480,8 +637,14 @@
     applyTheme(current === "light" ? "dark" : "light");
   });
 
+  document.getElementById("pinBtn").addEventListener("click", managePin);
+
   initTheme();
-  render();
+  if (isLocked()) {
+    showLockScreen(render);
+  } else {
+    render();
+  }
 })();
 </script>
 </body>
