@@ -215,6 +215,7 @@
     border-radius: 8px;
   }
   .del-btn:hover { color: var(--danger); background: rgba(248,113,113,0.1); }
+  .edit-btn:hover { color: var(--accent) !important; background: rgba(110,231,183,0.12) !important; }
 
   .heatmap {
     display: grid;
@@ -352,6 +353,7 @@
     cursor: pointer;
   }
   .weight-empty { color: var(--text-dim); font-size: 0.85rem; padding: 10px 0; }
+  .weight-meta { color: var(--text-dim); font-size: 0.78rem; margin-top: 4px; }
   .weight-row {
     display: flex;
     align-items: center;
@@ -1068,7 +1070,7 @@
               <button class="check-btn ${doneToday ? "done" : ""}" data-id="${h.id}" title="Marcar hoy">
                 ${doneToday ? "✓" : ""}
               </button>
-              <button class="del-btn" data-edit="${h.id}" title="Editar nombre">✎</button>
+              <button class="del-btn edit-btn" data-edit="${h.id}" title="Editar nombre">✎</button>
               <button class="del-btn" data-del="${h.id}" title="Eliminar">✕</button>
             </div>
           </div>
