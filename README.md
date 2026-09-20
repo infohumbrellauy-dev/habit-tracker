@@ -1,4 +1,4 @@
-# Brasa — Rastreador de Hábitos
+# Faro — Rastreador de Hábitos
 
 App web de una sola página para marcar hábitos diarios, ver tu racha (streak) y un mapa de calor estilo GitHub de los últimos ~3 meses.
 
