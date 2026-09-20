@@ -237,12 +237,65 @@
     padding: 60px 20px;
     font-size: 0.95rem;
   }
-  .mascot { display: block; margin: 0 auto 6px; color: var(--text-dim); }
-  .mascot-body { animation: mascotBounce 2.6s ease-in-out infinite; transform-origin: 60px 106px; }
+  .mascot-sky {
+    position: relative;
+    width: 160px;
+    height: 140px;
+    margin: 0 auto 10px;
+    border-radius: 22px;
+    background: radial-gradient(ellipse at 50% 35%, #4c1d95 0%, #2e1065 45%, #140a2e 100%);
+    box-shadow: 0 8px 28px rgba(76,29,149,0.35);
+    overflow: hidden;
+  }
+  .mascot-sky::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1.6px 1.6px at 18px 24px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 46px 12px, #fff, transparent),
+      radial-gradient(1.8px 1.8px at 78px 30px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 112px 18px, #fff, transparent),
+      radial-gradient(1.4px 1.4px at 138px 40px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 30px 58px, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 100px 60px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 145px 90px, #fff, transparent),
+      radial-gradient(1.4px 1.4px at 14px 100px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 60px 110px, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 125px 120px, #fff, transparent);
+    opacity: 0.85;
+    animation: starsTwinkle 3.2s ease-in-out infinite alternate;
+  }
+  @keyframes starsTwinkle {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+  .mascot { display: block; margin: 20px auto 0; color: var(--text-dim); overflow: visible; position: relative; z-index: 1; }
+  .mascot-sparkle { transform-box: fill-box; transform-origin: center; }
+  .mascot-sparkle-1 { transform: translate(96px, 24px); animation: sparklePulse 1.8s ease-in-out infinite; }
+  .mascot-sparkle-2 { transform: translate(22px, 34px); animation: sparklePulse 1.8s ease-in-out infinite 0.6s; }
+  @keyframes sparklePulse {
+    0%, 100% { opacity: 0.2; transform: translate(96px, 24px) scale(0.6); }
+    50% { opacity: 1; transform: translate(96px, 24px) scale(1.15); }
+  }
+  .mascot-sparkle-2 {
+    animation-name: sparklePulse2;
+  }
+  @keyframes sparklePulse2 {
+    0%, 100% { opacity: 0.15; transform: translate(22px, 34px) scale(0.5); }
+    50% { opacity: 1; transform: translate(22px, 34px) scale(1.1); }
+  }
+  .mascot-body { animation: mascotSquat 1.8s ease-in-out infinite; transform-origin: 60px 106px; }
   .mascot-arm { animation: mascotWave 1.6s ease-in-out infinite; transform-origin: 36px 66px; }
-  @keyframes mascotBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+  .mascot-eye-wink { animation: mascotWink 5s ease-in-out infinite; transform-origin: 71px 60px; }
+  .mascot-lift-arm { animation: mascotLift 1.8s ease-in-out infinite; transform-origin: 84px 66px; }
+  @keyframes mascotLift {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-40deg); }
+  }
+  @keyframes mascotSquat {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(4px) scaleY(0.94); }
   }
   @keyframes mascotWave {
     0%, 100% { transform: rotate(0deg); }
@@ -250,9 +303,75 @@
     50% { transform: rotate(0deg); }
     75% { transform: rotate(-10deg); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .mascot-body, .mascot-arm { animation: none; }
+  @keyframes mascotWink {
+    0%, 40%, 48%, 100% { transform: scaleY(1); }
+    44% { transform: scaleY(0.12); }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .mascot-body, .mascot-arm, .mascot-eye-wink, .mascot-lift-arm,
+    .mascot-sky::before, .mascot-sparkle-1, .mascot-sparkle-2 { animation: none; }
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    margin: 0 0 14px;
+    font-weight: 700;
+  }
+  .health-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-top: 10px;
+  }
+  .health-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .health-form input {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .health-form input:focus { border-color: var(--accent); }
+  #weightInput { width: 150px; }
+  #weightNote { flex: 1; min-width: 160px; }
+  .health-form button {
+    background: var(--accent);
+    color: #0b1210;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .weight-empty { color: var(--text-dim); font-size: 0.85rem; padding: 10px 0; }
+  .weight-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .weight-row:last-child { border-bottom: none; }
+  .weight-row .wr-date { color: var(--text-dim); width: 90px; flex-shrink: 0; }
+  .weight-row .wr-value { font-weight: 600; width: 70px; flex-shrink: 0; }
+  .weight-row .wr-note { color: var(--text-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .weight-row .wr-del {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .weight-row .wr-del:hover { color: var(--danger); }
 
   footer {
     text-align: center;
@@ -363,18 +482,43 @@
 
     <div id="habitList"></div>
     <div id="emptyState" class="empty" style="display:none;">
+      <div class="mascot-sky">
       <svg class="mascot" viewBox="0 0 120 120" width="100" height="100" aria-hidden="true">
         <ellipse class="mascot-shadow" cx="60" cy="106" rx="26" ry="6" fill="currentColor" opacity="0.12"/>
         <g class="mascot-body">
           <path d="M60 16c16 14 24 28 24 42a24 24 0 1 1-48 0c0-14 8-28 24-42z" fill="#ef4444"/>
           <circle cx="51" cy="60" r="4.5" fill="#0b1210"/>
-          <circle cx="71" cy="60" r="4.5" fill="#0b1210"/>
-          <path d="M52 72c4 5 12 5 16 0" stroke="#0b1210" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <circle class="mascot-eye-wink" cx="71" cy="60" r="4.5" fill="#0b1210"/>
+          <path d="M49 70c5 10 17 10 22 0" stroke="#0b1210" stroke-width="3.5" fill="none" stroke-linecap="round"/>
           <path class="mascot-arm" d="M36 66c-8 2-13 8-13 14" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M50 78c-2 8-4 15-3 22" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M72 78c2 8 4 15 3 22" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <g class="mascot-lift-arm">
+            <path d="M84 66c8 2 13 8 13 12" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <g transform="translate(99,79)">
+              <rect x="-9" y="-2.5" width="18" height="5" rx="2.5" fill="#0b1210"/>
+              <circle cx="-9" cy="0" r="5.5" fill="#0b1210"/>
+              <circle cx="9" cy="0" r="5.5" fill="#0b1210"/>
+            </g>
+          </g>
         </g>
+        <g class="mascot-sparkle mascot-sparkle-1"><path d="M0 -6L1.5 -1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5 -1.5Z" fill="#fde68a"/></g>
+        <g class="mascot-sparkle mascot-sparkle-2"><path d="M0 -4L1 -1L4 0L1 1L0 4L-1 1L-4 0L-1 -1Z" fill="#fde68a"/></g>
       </svg>
+      </div>
       <div>Aún no tienes hábitos. Añade el primero arriba.</div>
     </div>
+
+    <section class="health-section">
+      <h2 class="section-title">⚖️ Peso y salud</h2>
+      <div class="health-form">
+        <input id="weightInput" type="number" step="0.1" min="0" placeholder="Peso de hoy (kg)" />
+        <input id="weightNote" type="text" placeholder="Nota opcional (ánimo, sueño, etc.)" maxlength="80" />
+        <button id="weightAddBtn">Registrar</button>
+      </div>
+      <div id="weightChartWrap"></div>
+      <div id="weightLog"></div>
+    </section>
 
     <footer>
       Tus datos se guardan solo en este navegador (localStorage).<br>
@@ -388,6 +532,7 @@
   const THEME_KEY = "habit-tracker-theme-v1";
   const PIN_KEY = "habit-tracker-pin-v1";
   const WEBAUTHN_ID_KEY = "habit-tracker-webauthn-id-v1";
+  const HEALTH_KEY = "habit-tracker-health-v1";
   const DAYS_HISTORY = 91; // ~13 weeks heatmap
 
   const CATEGORIES = [
@@ -443,7 +588,23 @@
     } catch (e) {}
   }
 
+  function loadHealthLogs() {
+    try {
+      const raw = localStorage.getItem(HEALTH_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHealthLogs(logs) {
+    try {
+      localStorage.setItem(HEALTH_KEY, JSON.stringify(logs));
+    } catch (e) {}
+  }
+
   let habits = loadHabits();
+  let healthLogs = loadHealthLogs();
 
   function addHabit(name, category) {
     name = name.trim();
@@ -478,7 +639,8 @@
   }
 
   function exportData() {
-    const blob = new Blob([JSON.stringify(habits, null, 2)], { type: "application/json" });
+    const payload = { habits: habits, healthLogs: healthLogs };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -492,15 +654,111 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
-        if (!Array.isArray(parsed)) throw new Error("Formato inválido");
-        habits = parsed;
+        if (Array.isArray(parsed)) {
+          habits = parsed;
+        } else if (parsed && Array.isArray(parsed.habits)) {
+          habits = parsed.habits;
+          healthLogs = Array.isArray(parsed.healthLogs) ? parsed.healthLogs : [];
+        } else {
+          throw new Error("Formato inválido");
+        }
         saveHabits(habits);
+        saveHealthLogs(healthLogs);
         render();
+        renderHealth();
       } catch (e) {
         alert("No se pudo importar el archivo: formato inválido.");
       }
     };
     reader.readAsText(file);
+  }
+
+  function addWeightEntry(weightStr, note) {
+    const weight = parseFloat(weightStr);
+    if (!weight || weight <= 0) return;
+    const today = todayStr();
+    const existing = healthLogs.find(l => l.date === today);
+    if (existing) {
+      existing.weight = weight;
+      existing.note = (note || "").trim();
+    } else {
+      healthLogs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), date: today, weight, note: (note || "").trim() });
+    }
+    healthLogs.sort((a, b) => a.date.localeCompare(b.date));
+    saveHealthLogs(healthLogs);
+    renderHealth();
+  }
+
+  function deleteWeightEntry(id) {
+    healthLogs = healthLogs.filter(l => l.id !== id);
+    saveHealthLogs(healthLogs);
+    renderHealth();
+  }
+
+  function buildWeightChartSvg(logs) {
+    const w = 600, h = 160, pad = 24;
+    const values = logs.map(l => l.weight);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const stepX = logs.length > 1 ? (w - pad * 2) / (logs.length - 1) : 0;
+
+    const points = logs.map((l, i) => {
+      const x = pad + i * stepX;
+      const y = h - pad - ((l.weight - min) / range) * (h - pad * 2);
+      return { x, y, l };
+    });
+
+    const linePath = points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
+    const areaPath = linePath + ` L${points[points.length - 1].x.toFixed(1)},${h - pad} L${points[0].x.toFixed(1)},${h - pad} Z`;
+
+    const dots = points.map(p =>
+      `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="var(--accent)"><title>${p.l.date}: ${p.l.weight} kg</title></circle>`
+    ).join("");
+
+    return `
+      <svg viewBox="0 0 ${w} ${h}" width="100%" height="160" preserveAspectRatio="none">
+        <path d="${areaPath}" fill="var(--accent)" opacity="0.12" stroke="none"/>
+        <path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${dots}
+      </svg>
+      <div class="weight-meta">Mín: ${min} kg · Máx: ${max} kg</div>
+    `;
+  }
+
+  function renderHealth() {
+    const chartWrap = document.getElementById("weightChartWrap");
+    const logWrap = document.getElementById("weightLog");
+
+    if (healthLogs.length === 0) {
+      chartWrap.innerHTML = "";
+      logWrap.innerHTML = `<div class="weight-empty">Todavía no registraste tu peso. Cargá el primero arriba.</div>`;
+      return;
+    }
+
+    if (healthLogs.length >= 2) {
+      chartWrap.innerHTML = buildWeightChartSvg(healthLogs);
+    } else {
+      chartWrap.innerHTML = `<div class="weight-empty">Agregá al menos 2 registros para ver el gráfico de progreso.</div>`;
+    }
+
+    const sortedDesc = [...healthLogs].sort((a, b) => b.date.localeCompare(a.date));
+    logWrap.innerHTML = sortedDesc.map(l => `
+      <div class="weight-row">
+        <span class="wr-date">${l.date}</span>
+        <span class="wr-value">${l.weight} kg</span>
+        <span class="wr-note">${escapeHtml(l.note || "")}</span>
+        <button class="wr-del" data-weight-del="${l.id}" title="Eliminar">✕</button>
+      </div>
+    `).join("");
+
+    logWrap.querySelectorAll("[data-weight-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (confirm("¿Eliminar este registro de peso?")) {
+          deleteWeightEntry(btn.dataset.weightDel);
+        }
+      });
+    });
   }
 
   function isLocked() {
@@ -777,6 +1035,14 @@
     }
   });
 
+  document.getElementById("weightAddBtn").addEventListener("click", () => {
+    const w = document.getElementById("weightInput");
+    const n = document.getElementById("weightNote");
+    addWeightEntry(w.value, n.value);
+    w.value = "";
+    n.value = "";
+  });
+
   document.getElementById("exportBtn").addEventListener("click", exportData);
 
   document.getElementById("importBtn").addEventListener("click", () => {
@@ -798,6 +1064,7 @@
   document.getElementById("biometricBtn").addEventListener("click", manageBiometric);
 
   initTheme();
+  renderHealth();
   if (isLocked()) {
     showLockScreen(render);
   } else {
