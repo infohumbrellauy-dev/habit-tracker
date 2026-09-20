@@ -380,6 +380,30 @@
     margin-top: 30px;
   }
 
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-16px);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 2000;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .lock-screen {
     position: fixed;
     inset: 0;
@@ -446,6 +470,8 @@
 </style>
 </head>
 <body>
+  <div id="toast" class="toast"></div>
+
   <div id="lockScreen" class="lock-screen" style="display:none;">
     <div class="lock-card">
       <div class="lock-icon">🔒</div>
@@ -913,10 +939,57 @@
     if (!h) return;
     const t = todayStr();
     const idx = h.dates.indexOf(t);
-    if (idx >= 0) h.dates.splice(idx, 1);
-    else h.dates.push(t);
+    let justCompleted = false;
+    if (idx >= 0) {
+      h.dates.splice(idx, 1);
+    } else {
+      h.dates.push(t);
+      justCompleted = true;
+    }
     saveHabits(habits);
     render();
+    if (justCompleted) celebrate(computeStreak(h.dates));
+  }
+
+  function playChime() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new Ctx();
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const start = ctx.currentTime + i * 0.09;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.15, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.32);
+      });
+    } catch (e) {}
+  }
+
+  function showToast(text) {
+    const toast = document.getElementById("toast");
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), 2200);
+  }
+
+  function celebrate(streak) {
+    let msg;
+    if (streak === 1) msg = "🎉 ¡Buen comienzo!";
+    else if (streak === 7) msg = "🔥 ¡Una semana seguida!";
+    else if (streak === 30) msg = "🏆 ¡Un mes entero de racha!";
+    else if (streak === 100) msg = "🌟 ¡100 días! Sos una máquina.";
+    else if (streak > 0 && streak % 10 === 0) msg = `💪 ¡${streak} días de racha!`;
+    else msg = "✅ ¡Hábito completado!";
+    showToast(msg);
+    playChime();
   }
 
   function computeStreak(dates) {
